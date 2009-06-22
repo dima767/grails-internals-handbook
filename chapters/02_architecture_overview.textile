@@ -1,3 +1,23 @@
-h1. Grails architecture overview
+h1. Grails architecture
 
-There you go - this is the beginning. Document a high level Grails architecture here...
+h2. Overview
+
+Grails at its core is built on top of the Spring framework. It uses Spring's core dependency injection container to manage all its objects as well as Spring's MVC framework as an underlying technology for its MVC subsystem. Grails adds Groovy-based convention-over-configuration system, scaffolding of the core artefacts such as Controllers and Views, highly dynamic persistence framework called GORM by wrapping Hibernate OR Mapper underneath, the Groovy-based DSLs for just about anything from configuration, validation constraints to very rich web flow DSL built on top of Spring WebFlow, highly flexible build scripting system based on Gant and Ivy.
+
+The secret sauce of the Grails architecture which makes the above things possible is Groovy programming language with its highly dynamic facility, namely Meta Object Protocol (MOP). Also another advantage using Groovy here is its ability to natively inter-operate with 'raw' Java, so that users of the framework (as well as Grails itself) are not constrained and limited by 'language isolation'. The entire rich repository of any imaginable Java libraries on Earth is available to Grails developers and users.
+
+The core of Grails is mostly implemented in 'raw' Java
+
+h1. Major components overview
+
+h2. Core
+
+The core of Grails is based around the concept of <code>GrailsApplication</code> , and a set of well known <code>Artefacts</code> known to the application. Each <code>Artefact</code> knows how to handle a specific task well.
+TODO: Am I going into the right direction...?
+
+
+
+
+
+
+
