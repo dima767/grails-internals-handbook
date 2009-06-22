@@ -1,0 +1,3 @@
+h1. Grails architecture overview
+
+There you go - this is the beginning. Document a high level Grails architecture here...

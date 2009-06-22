@@ -1,0 +1,24 @@
+h1. Foreword
+
+h2. Why do we need this book?
+
+It is one thing to know how to use an existing uber cool framework, 
+and another thing to know its internals and being able to read the code and understand how it does things under the covers.
+For true 'hacker' types it is a very satisfying experience to be able to understand and to contribute to a successful Open Source project.
+
+So this is an attempt to fill the void of documenting the inner workings of the Grails framework. Please note that it probably will not be possible to
+cover every possible class and every single line of code, but at least it is an attempt to cover major Grails subsystems fairly thoroughly.
+
+The main advantage of such a book is that it's 'community-driven' and if the original author gets stuck or loses a passion, hopefully other passionate 'hackers'
+will fork it and keep it alive. In fact the book is designed to be written by 'community' and the 'original author' encourages everyone to contribute by forking it. 
+
+
+h2. Contributing.
+
+If you want to contribute, fork this repository and go ahead.
+Pull requests on GitHub are more than welcome. If you use
+patches, make sure you use git format-patch and your patch
+has author name and email address on it.
+
+Do keep in mind that my native language is Russian, so do not
+hesitate to correct my English grammar
