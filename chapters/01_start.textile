@@ -1,7 +1,7 @@
 h1. Start.
 
 Grails framework is super cool. It is fairly well documented, but there is a void in its internal implementation documentation (at least more or less a comprehensive one)
-Hense the idea for this community-driven book about Grails internals.
+Hence the idea for this community-driven book about Grails internals.
 
 h2. What will be covered
 
