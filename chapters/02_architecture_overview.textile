@@ -8,11 +8,35 @@ The secret sauce of the Grails architecture which makes the above things possibl
 
 The core of Grails is mostly implemented in 'raw' Java
 
-h2. Core
+h2. Core (in $GRAILS_SRC_HOME/grails/src/commons)
 
-The core of Grails is based around the concept of <code>GrailsApplication</code> , and a set of well known <code>Artefacts</code> known to the application. Each <code>Artefact</code> knows how to handle a specific task well.
-TODO: Am I going into the right direction...?
+The core of Grails runtime is based around the concept of <code>org.codehaus.groovy.grails.commons.GrailsApplication</code> which is a singleton runtime representation of a running Grails application, and a set of well known Artefacts known to the application represented as a root interface <code>org.codehaus.groovy.grails.commons.GrailsClass</code> Each <code>Artefact</code> knows how to handle a specific task well such as representing the domain classes, controller classes, services classes, etc. <code>GrailsApplication</code> interacts with <code>Artefacts</code> via <code>ArtefactHandler</code> API
 
+The default implementation of <code>GrailsApplication</code> is <code>org.codehaus.groovy.grails.commons.DefaultGrailsApplication</code>
+
+The Grails artefacts are:
+
+* <code>org.codehaus.groovy.grails.commons.GrailsBootstrapClass</code>
+* <code>org.codehaus.groovy.grails.commons.GrailsDomainClass</code>
+* <code>org.codehaus.groovy.grails.commons.GrailsDataSource</code>
+* <code>org.codehaus.groovy.grails.commons.GrailsControllerClass</code>
+* <code>org.codehaus.groovy.grails.commons.GrailsCodecClass</code>
+* <code>org.codehaus.groovy.grails.commons.GrailsServiceClass</code>
+* <code>org.codehaus.groovy.grails.commons.GrailsTagLibClass</code>
+* <code>org.codehaus.groovy.grails.commons.GrailsUrlMappingsClass</code>
+
+and they're managed by:
+
+* <code>org.codehaus.groovy.grails.commons.BootstrapArtefactHandler</code>
+* <code>org.codehaus.groovy.grails.commons.DomainClassArtefactHandler</code>
+* <code>org.codehaus.groovy.grails.commons.ControllerArtefactHandler</code>
+* <code>org.codehaus.groovy.grails.commons.CodecArtefactHandler</code>
+* <code>org.codehaus.groovy.grails.commons.ServiceArtefactHandler</code>
+* <code>org.codehaus.groovy.grails.commons.TagLibArtefactHandler</code>
+* <code>org.codehaus.groovy.grails.commons.UrlMappingsArtefactHandler</code>
+
+h2. GORM
+TODO: To be continued...
 
 
 
