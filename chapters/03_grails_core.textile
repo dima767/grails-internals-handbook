@@ -18,6 +18,7 @@ The @GrailsApplication@ itself doesn't know anything about specific artefact typ
 
 More specifically the @ArtefactHandler.isArtefact(Class)@ method will check whether a given class is of of a particular artefact type. As an example take a look at the code for the @ServiceArtefactHandler@:
 
+<pre>
 <code>
 public class ServiceArtefactHandler extends ArtefactHandlerAdapter {
 
@@ -43,10 +44,13 @@ public class ServiceArtefactHandler extends ArtefactHandlerAdapter {
     }
 }		
 </code>
+</pre>
 
 This @ArtefactHandler@ knows about services and they conventions they model (ie a service ends with "Service" etc.). With this @ArtefactHandler@ in place the @GrailsApplication@ object exhibits the following behavior:
 
+<pre>
 <code>
+
 class TestService {}
 
 assert application.isArtefact(TestService)
@@ -56,13 +60,16 @@ GrailsClass theService = application.getArtefact(ServiceArtefactHandler.TYPE, "T
 assert theService != null
 assert application.getArtefacts(ServiceArtefactHandler.TYPE).size() == 1
 </code>
+</pre>
 
 These are all statically typed invocations, but the @GrailsApplication@ object also has some dynamic behavior. For example you can do this in Groovy:
 
+<pre>
 <code>
 	assert application.serviceClasses.size() == 1
 	assert application.getServiceClass("TestService") != null
 	assert application.isServiceClass(TestService)
 </code>
+</pre>
 
 As said previously the @GrailsApplication@ object itself doesn't know anything about specific artefacts (like services), but because of the dynamic nature of Groovy it is enhanced at runtime to seem like its aware like the code above demonstrates.
