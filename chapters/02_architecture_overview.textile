@@ -48,13 +48,33 @@ and they're managed by:
 
 * <code>org.codehaus.groovy.grails.commons.UrlMappingsArtefactHandler</code>
 
-h2. Core Plugins (in in $GRAILS_SRC_HOME/grails/src/commons and in $GRAILS_SRC_HOME/grails/src/groovy)
+h2. Core Plugins (in $GRAILS_SRC_HOME/grails/src/commons and in $GRAILS_SRC_HOME/grails/src/groovy)
 
 The core of Grails is pretty small in the sense that it only has the functionality of managing running Grails applications, Groovy compilation and ClassLoading, command line and scripting functionality. All the other Artefacts are loaded into the system as a set of Grails <code>plugins</code> represented by <code>org.codehaus.groovy.grails.plugins.GrailsPlugin</code>. The key API for managing plugins in Grails is <code>org.codehaus.groovy.grails.plugins.GrailsPluginManager</code>.
 
 Grails differentiates the notion of user contributed plugins and "core" plugins. A core plugin is loaded statically from the JAR files that Grails provides. This happens in @org.codehaus.groovy.grails.plugins.CorePluginFinder@. Currently the only plugin out the default set of plugins that ship with Grails that is not loaded statically is the Hibernate plugin (GORM).
 
+h2. Command Line (in $GRAILS_SRC_HOME/grails/scripts and $GRAILS_SRC_HOME/bin)
 
+Grails' command line is built on top of Gant, a Groovy wrapper around Apache Ant. Unlike traditional Gant where commands can be changed. Grails wraps Gant in its own execution framework. The main class that handles this is @org.codehaus.groovy.grails.cli.GrailsScriptRunner@.
+
+@org.codehaus.groovy.grails.cli.support.GrailsStarter@ is called via the bash/windows scripts in @$GRAILS_SRC_HOME/bin@ so when you call:
+
+<code>
+$ grails run-app	
+</code>
+
+The class that ultimately ends up delegating to @GrailsScriptRunner@, which will convert the @run-app@ command into a camel-cases script name like @RunApp.groovy@. @GrailsScriptRunner@ then searches the following directories for a script to execute:
+
+* @$GRAILS_SRC_HOME/scripts@
+* @$PROJECT_HOME/scripts@
+* @$PLUGINS_HOME/*/scripts@
+* @~/.grails/scripts@
+
+@GrailsScriptRunner@ will execute the default target (the target specified by setDefaultTarget(name) inside the script) when found.
+
+When @org.codehaus.groovy.grails.cli.support.GrailsStarter@ is executed it loads @GrailsScriptRunner@ within a parent class loader that is a Groovy @RootLoader@ (a subclass of @URLClassLoader@). The @RootLoader@ is parses the @$GRAILS_SRC_HOME/conf/groovy-starter.conf@ file which is how Groovy, Gant and the @grails-bootstrap.jar@ file get onto the classpath. 
+ 
 
 
 
