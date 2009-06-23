@@ -6,7 +6,7 @@ Grails at its core is built on top of the Spring framework. It uses Spring's cor
 
 The secret sauce of the Grails architecture which makes the above things possible is Groovy programming language with its highly dynamic facility, namely Meta Object Protocol (MOP). Also another advantage of using Groovy here is its ability to natively inter-operate with 'raw' Java, so that users of the framework (as well as Grails itself) are not constrained and limited by 'language isolation'. The entire rich repository of any imaginable Java libraries on Earth is available to Grails developers and users.
 
-The core of Grails is mostly implemented in 'raw' Java
+The core of Grails is implemented partly in Groovy and partly in Java.
 
 h2. Core (in $GRAILS_SRC_HOME/grails/src/commons)
 
@@ -48,11 +48,11 @@ and they're managed by:
 
 * <code>org.codehaus.groovy.grails.commons.UrlMappingsArtefactHandler</code>
 
-h2. Core Pllugins(in in $GRAILS_SRC_HOME/grails/src/commons and in $GRAILS_SRC_HOME/grails/src/groovy)
+h2. Core Plugins (in in $GRAILS_SRC_HOME/grails/src/commons and in $GRAILS_SRC_HOME/grails/src/groovy)
 
 The core of Grails is pretty small in the sense that it only has the functionality of managing running Grails applications, Groovy compilation and ClassLoading, command line and scripting functionality. All the other Artefacts are loaded into the system as a set of Grails <code>plugins</code> represented by <code>org.codehaus.groovy.grails.plugins.GrailsPlugin</code>. The key API for managing plugins in Grails is <code>org.codehaus.groovy.grails.plugins.GrailsPluginManager</code>.
 
-To be continued...
+Grails differentiates the notion of user contributed plugins and "core" plugins. A core plugin is loaded statically from the JAR files that Grails provides. This happens in @org.codehaus.groovy.grails.plugins.CorePluginFinder@. Currently the only plugin out the default set of plugins that ship with Grails that is not loaded statically is the Hibernate plugin (GORM).
 
 
 
