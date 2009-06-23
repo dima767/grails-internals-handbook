@@ -6,11 +6,13 @@ A @GrailsApplication@ is responsible for managing the classes in a Grails applic
 
 For testing the latter is typically is used:
 
+<pre>
 <code>
 	def gcl = new GroovyClassLoader()
 	// load classes ...
 	def app = new DefaultGrailsApplication(gcl.loadedClasses, gcl)
 </code>
+</pre>
 
 The @GrailsApplication@ reads all of the classes in a Grails application and then encapsulates each relevant class in a @GrailsClass@ implementation. The @GrailsClass@ interface represents is commonly referred to as an "artefact" type. 
 
