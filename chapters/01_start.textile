@@ -10,8 +10,8 @@ h2. What will be covered
 * Grails artefacts (artifacts) abstraction
 * Grails URL mapping and routing framework
 * Grails persistence framework, namely GORM
-* Grails MVC subsytem
-* Grails PlugIn framewok
+* Grails MVC subsystem
+* Grails Plugin framework
 * Anything else...
 
 
