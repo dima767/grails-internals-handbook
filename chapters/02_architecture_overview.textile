@@ -48,8 +48,11 @@ and they're managed by:
 
 * <code>org.codehaus.groovy.grails.commons.UrlMappingsArtefactHandler</code>
 
-h2. Plugins
-TODO: To be continued...
+h2. Core Pllugins(in in $GRAILS_SRC_HOME/grails/src/commons and in $GRAILS_SRC_HOME/grails/src/groovy)
+
+The core of Grails is pretty small in the sense that it only has the functionality of managing running Grails applications, Groovy compilation and ClassLoading, command line and scripting functionality. All the other Artefacts are loaded into the system as a set of Grails <code>plugins</code> represented by <code>org.codehaus.groovy.grails.plugins.GrailsPlugin</code>. The key API for managing plugins in Grails is <code>org.codehaus.groovy.grails.plugins.GrailsPluginManager</code>.
+
+To be continued...
 
 
 
