@@ -1,0 +1,19 @@
+h1. Grails Core
+
+Grails is a Convention over Configuration framework and the class that represents those conventions is the singleton @org.codehaus.groovy.grails.commons.GrailsApplication@ instance.
+
+A @GrailsApplication@ is responsible for managing the classes in a Grails application. This interface is implemented by the @DefaultGrailsApplication@ class which can take a array of Spring @Resource@ instances or a list of classes and a @GroovyClassLoader@.
+
+For testing the latter is typically is used:
+
+<code>
+	def gcl = new GroovyClassLoader()
+	// load classes ...
+	def app = new DefaultGrailsApplication(gcl.loadedClasses, gcl)
+</code>
+
+The @GrailsApplication@ reads all of the classes in a Grails application and then encapsulates each relevant class in a @GrailsClass@ implementation. The @GrailsClass@ interface represents is commonly referred to as an "artefact" type. 
+
+The @GrailsApplication@ itself doesn't know anything about specific artefact types (controllers, domain classes etc.), instead it delegates this to the @org.codehaus.groovy.grails.commons.ArtefactHandler@ interface.
+
+More specifically the @ArtefactHandler.isArtefact(Class)@ method will check whether a given class is of of a particular artefact type. 
