@@ -21,6 +21,6 @@ Here's what the @RunApp.groovy@ looks like:
 </code>
 </pre>
 
-As you could see it is a high level Gant script that relies on the lower level targets of the 'system' scripts (the one prefixed with underscore). Let's bisect those targets one by one i.e. @checkVersion@, @configureProxy@, @packageApp@, @parseArgumnets@
+As you could see it is a high level Gant script that relies on the lower level targets of the 'system' scripts (the one prefixed with underscore). Let's bisect those targets one by one i.e. @checkVersion@, @configureProxy@, @packageApp@, @parseArgumnets@, @runApp@, and @watchContext@
 
 TODO: Would need some help on this one, as scripts are highly dynamic and it's hard to track where the stuff (variables) comes from. Work in progress...
