@@ -16,4 +16,53 @@ The @GrailsApplication@ reads all of the classes in a Grails application and the
 
 The @GrailsApplication@ itself doesn't know anything about specific artefact types (controllers, domain classes etc.), instead it delegates this to the @org.codehaus.groovy.grails.commons.ArtefactHandler@ interface.
 
-More specifically the @ArtefactHandler.isArtefact(Class)@ method will check whether a given class is of of a particular artefact type. 
+More specifically the @ArtefactHandler.isArtefact(Class)@ method will check whether a given class is of of a particular artefact type. As an example take a look at the code for the @ServiceArtefactHandler@:
+
+<code>
+public class ServiceArtefactHandler extends ArtefactHandlerAdapter {
+
+    public static final String TYPE = "Service";
+    public static final String PLUGIN_NAME = "services";
+
+    public ServiceArtefactHandler() {
+        super(TYPE, 
+              GrailsServiceClass.class, 
+              DefaultGrailsServiceClass.class, 
+              DefaultGrailsServiceClass.SERVICE,
+              false);
+    }
+
+    @Override
+    public String getPluginName() {
+        return PLUGIN_NAME;
+    }
+
+    public boolean isArtefactClass(Class clazz) {
+        return super.isArtefactClass(clazz) && 
+               !DomainClassArtefactHandler.isDomainClass(clazz);
+    }
+}		
+</code>
+
+This @ArtefactHandler@ knows about services and they conventions they model (ie a service ends with "Service" etc.). With this @ArtefactHandler@ in place the @GrailsApplication@ object exhibits the following behavior:
+
+<code>
+class TestService {}
+
+assert application.isArtefact(TestService)
+assert application.isArtefactOfType(ServiceArtefactHandler.TYPE, TestService)
+
+GrailsClass theService = application.getArtefact(ServiceArtefactHandler.TYPE, "TestService")
+assert theService != null
+assert application.getArtefacts(ServiceArtefactHandler.TYPE).size() == 1
+</code>
+
+These are all statically typed invocations, but the @GrailsApplication@ object also has some dynamic behavior. For example you can do this in Groovy:
+
+<code>
+	assert application.serviceClasses.size() == 1
+	assert application.getServiceClass("TestService") != null
+	assert application.isServiceClass(TestService)
+</code>
+
+As said previously the @GrailsApplication@ object itself doesn't know anything about specific artefacts (like services), but because of the dynamic nature of Groovy it is enhanced at runtime to seem like its aware like the code above demonstrates.
