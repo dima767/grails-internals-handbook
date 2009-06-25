@@ -165,7 +165,7 @@ Here's what @runInline@ looks like:
 	    startPluginScanner()
 	}
 </code>
-</code>
+</pre>
 
 It uses @grails.web.container.EmbeddableServerFactory@ and @grails.web.container.EmbeddableServer@ abstraction for pluggable embeddable web servers.
 
