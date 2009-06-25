@@ -1,4 +1,4 @@
-h1. Low level Bootstrap
+h1. Low level bootstrap (compilation, application packaging, launching embedded servlet container)
 
 Let's see what happens under the hood when an existing Grails application is run in the dev-mode i.e. the command @grails run-app@ is invoked at the command line. We will start looking at the point where @org.codehaus.groovy.grails.cli.GrailsScriptRunner@ invokes @$GRAILS_SRC_HOME/grails/scripts/RunApp.groovy@ via @gant.Gant#processTargets@ of the loaded script e.g. invokes script's default target.
 
