@@ -1,4 +1,4 @@
-h1. Bootstrap
+h1. Low level Bootstrap
 
 Let's see what happens under the hood when an existing Grails application is run in the dev-mode i.e. the command @grails run-app@ is invoked at the command line. We will start looking at the point where @org.codehaus.groovy.grails.cli.GrailsScriptRunner@ invokes @$GRAILS_SRC_HOME/grails/scripts/RunApp.groovy@ via @gant.Gant#processTargets@ of the loaded script e.g. invokes script's default target.
 
@@ -21,7 +21,7 @@ Here's what the @RunApp.groovy@ looks like:
 </code>
 </pre>
 
-As you could see, it is a high level Gant script that relies on the lower level targets of the 'internal' scripts (the ones prefixed with underscore; they are not exposed as CLI) which are made available via Gant include mechanism: @includeTargets << grailsScript("_GrailsRun")@. This include makes all other Scripts included 'transitively', hence making finding dependent targets possible. Let's dissect those targets one by one i.e. @checkVersion@, @configureProxy@, @packageApp@, @parseArgumnets@, @runApp@, and @watchContext@
+As you could see, it is a high level Gant script that relies on the lower level targets of the 'internal' scripts (the ones prefixed with underscore; they are not exposed as CLI) which are made available via Gant include mechanism: @includeTargets << grailsScript("_GrailsRun")@. This include makes all other Scripts included 'transitively', hence making finding dependent targets possible. Let's dissect those targets one by one i.e. @checkVersion@, @configureProxy@, @packageApp@, and @runApp@
 
 [_scripts/_GrailsInit.groovy (checkVersion target)_]
 
@@ -46,7 +46,7 @@ As you could see, it is a high level Gant script that relies on the lower level 
 
 As can be seen, it is a 'guard' target which makes sure that the bootstrap will proceed only in case of the installed Grails version matches Grails application's version (declared in application.properties). Also there is a check here for the 'exotic' case of application that's being tried to run is pre-0.5 version of Grails. In any of those cases, Grails sends an inforamtive message to the client and halts the execution of JVM i.e. @exit(1)@
 
-The 'magic' variables like @metadataFile@, @appGrailsVersion@, and @grailsVersion@ come from different places. The @metadataFile@ and @grailsVersion@ exist in the context of @groovy.lang.Binding@ which has been passed to Gant by @GrailsScriptRunner@ and @grailsVersion@ is a 'script global' variable which has been se and made available to all the scripts by @scripts/_GrailsSettings.groovy@. So, for future reference, if you're reading Grails scripts and wondering where a certain 'magic' variable comes from, look at @org.codehaus.groovy.grails.cli.GrailsScriptRunner.java ('initBinding' method)@ or @scripts/_GrailsSettings.groovy@
+The 'magic' variables like @metadataFile@, @appGrailsVersion@, and @grailsVersion@ come from different places. The @metadataFile@ and @grailsVersion@ exist in the context of @groovy.lang.Binding@ which has been passed to Gant by @GrailsScriptRunner@ and @grailsVersion@ is a 'script global' variable which has been set and made available to all the scripts by @scripts/_GrailsSettings.groovy@. So, for future reference, if you're reading Grails scripts and wondering where a certain 'magic' variable comes from, look at @org.codehaus.groovy.grails.cli.GrailsScriptRunner.java ('initBinding' method)@ or @scripts/_GrailsSettings.groovy@
 
 [_scripts/_GrailsProxy.groovy (configureProxy target)_]
 
@@ -75,7 +75,124 @@ The 'magic' variables like @metadataFile@, @appGrailsVersion@, and @grailsVersio
 
 This target is pretty straight forward. It just detects custom ProxyConfig script located in @${userHome}/.grails/scripts/ProxyConfig.groovy@ and if there is such script, it sets HTTP proxy related system variables.
 
-TODO: Work in progress...
+[_scripts/_GrailsPackage.groovy (packageApp target)_]
+
+<pre>
+<code>
+	target( packageApp : "Implementation of package target") {
+		depends(createStructure, packagePlugins, packageTlds)
+
+		try {
+	        profile("compile") {
+	            compile()
+	        }
+		}
+		catch(Exception e) {
+	        logError("Compilation error",e)
+			exit(1)
+		}
+	    profile("creating config") {
+	        createConfig()
+	    }
+
+	    configureServerContextPath()
+
+	    String i18nDir = "${resourcesDirPath}/grails-app/i18n"
+	    ant.mkdir(dir:i18nDir)
+
+	    def files = ant.fileScanner {
+	        fileset(dir:"${basedir}/grails-app/views", includes:"**/*.jsp")
+	    }
+
+	    if(files.iterator().hasNext()) {
+	        ant.mkdir(dir:"${basedir}/web-app/WEB-INF/grails-app/views")
+	        ant.copy(todir:"${basedir}/web-app/WEB-INF/grails-app/views") {
+	            fileset(dir:"${basedir}/grails-app/views", includes:"**/*.jsp")
+	        }
+	    }
+
+		if(config.grails.enable.native2ascii) {
+			profile("converting native message bundles to ascii") {
+				ant.native2ascii(src:"${basedir}/grails-app/i18n",
+								 dest:i18nDir,
+								 includes:"*.properties",
+								 encoding:"UTF-8")
+			}
+		}
+		else {
+		    ant.copy(todir:i18nDir) {
+				fileset(dir:"${basedir}/grails-app/i18n", includes:"*.properties")
+			}
+		}
+	    ant.copy(todir:classesDirPath) {
+			fileset(dir:"${basedir}", includes:metadataFile.name)
+		}
+
+	    // Copy resources from various directories to the target "resources" dir.
+	    packageFiles(basedir)
+
+	    startLogging()
+
+	    loadPlugins()
+	    generateWebXml()
+	    event("PackagingEnd",[])
+	}
+</code>
+</pre>
+
+@packageApp@ target does the heavy lifting of making sure that the project classes are compiled, and collects various resources needed for running web app like plugins, various property files, jsp files, Spring application context which defines Grails runtime in a central application location. It also generates web.xml web descriptor and bootstraps Log4J logging.
+
+[_scripts/_GrailsRun.groovy (runApp target)_]
+
+<pre>
+<code>
+	target(runApp: "Main implementation that executes a Grails application") {
+	    runInline(SCHEME_HTTP, serverHost, serverPort, serverPortHttps)
+	}
+</code>
+</pre>
+
+This target performs the final phase of the 'low level' bootstrap which finally launches packaged web application in the embedded servlet container (Jetty by default) after which the 'high level' bootstrap phase begins i.e. launching Spring container which in turn bootstraps beans representing Grails runtime i.e. @GrailsApplication@ instance.
+
+Here's what @runInline@ looks like:
+
+<pre>
+<code>
+	private runInline(scheme, host, httpPort, httpsPort) {
+	    EmbeddableServerFactory serverFactory = loadServerFactory()
+	    grailsServer = serverFactory.createInline("${basedir}/web-app", webXmlFile.absolutePath, serverContextPath, classLoader)
+	    runServer server: grailsServer, host:host, httpPort: httpPort, httpsPort: httpsPort, scheme:scheme
+	    startPluginScanner()
+	}
+</code>
+</code>
+
+It uses @grails.web.container.EmbeddableServerFactory@ and @grails.web.container.EmbeddableServer@ abstraction for pluggable embeddable web servers.
+
+And finally here's how Jetty server factory gets loaded (in 'loadServerFactory'):
+
+<pre>
+<code>
+	private EmbeddableServerFactory loadServerFactory() {
+	    def load = { name -> classLoader.loadClass(name).newInstance() }
+
+
+	    def containerClass = getPropertyValue("grails.server.factory", "org.codehaus.groovy.grails.web.container.JettyServerFactory")
+	    EmbeddableServerFactory serverFactory
+	    try {
+	        serverFactory = load(containerClass)
+	    }
+	    catch (Throwable e) {
+	        GrailsUtil.deepSanitize(e)
+	        e.printStackTrace()
+	        event("StatusFinal", ["Failed to load container [$containerClass]: ${e.message}"])
+	        exit(1)
+	    }
+	    return serverFactory
+	}
+</code>
+</pre>			  
+
 
 
 
