@@ -23,7 +23,7 @@ Here's what the @RunApp.groovy@ looks like:
 
 As you could see, it is a high level Gant script that relies on the lower level targets of the 'internal' scripts (the ones prefixed with underscore; they are not exposed as CLI) which are made available via Gant include mechanism: @includeTargets << grailsScript("_GrailsRun")@. This include makes all other Scripts included 'transitively', hence making finding dependent targets possible. Let's dissect those targets one by one i.e. @checkVersion@, @configureProxy@, @packageApp@, and @runApp@
 
-[_scripts/_GrailsInit.groovy (checkVersion target)_]
+[scripts/_GrailsInit.groovy (checkVersion target)]
 
 <pre>
 <code>
@@ -48,7 +48,7 @@ As can be seen, it is a 'guard' target which makes sure that the bootstrap will 
 
 The 'magic' variables like @metadataFile@, @appGrailsVersion@, and @grailsVersion@ come from different places. The @metadataFile@ and @grailsVersion@ exist in the context of @groovy.lang.Binding@ which has been passed to Gant by @GrailsScriptRunner@ and @grailsVersion@ is a 'script global' variable which has been set and made available to all the scripts by @scripts/_GrailsSettings.groovy@. So, for future reference, if you're reading Grails scripts and wondering where a certain 'magic' variable comes from, look at @org.codehaus.groovy.grails.cli.GrailsScriptRunner.java ('initBinding' method)@ or @scripts/_GrailsSettings.groovy@
 
-[_scripts/_GrailsProxy.groovy (configureProxy target)_]
+[scripts/_GrailsProxy.groovy (configureProxy target)]
 
 <pre>
 <code>
@@ -75,7 +75,7 @@ The 'magic' variables like @metadataFile@, @appGrailsVersion@, and @grailsVersio
 
 This target is pretty straight forward. It just detects custom ProxyConfig script located in @${userHome}/.grails/scripts/ProxyConfig.groovy@ and if there is such script, it sets HTTP proxy related system variables.
 
-[_scripts/_GrailsPackage.groovy (packageApp target)_]
+[scripts/_GrailsPackage.groovy (packageApp target)]
 
 <pre>
 <code>
@@ -142,7 +142,7 @@ This target is pretty straight forward. It just detects custom ProxyConfig scrip
 
 @packageApp@ target does the heavy lifting of making sure that the project classes are compiled, and collects various resources needed for running web app like plugins, various property files, jsp files, Spring application context which defines Grails runtime in a central application location. It also generates web.xml web descriptor and bootstraps Log4J logging.
 
-[_scripts/_GrailsRun.groovy (runApp target)_]
+[scripts/_GrailsRun.groovy (runApp target)]
 
 <pre>
 <code>
