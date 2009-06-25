@@ -21,6 +21,64 @@ Here's what the @RunApp.groovy@ looks like:
 </code>
 </pre>
 
-As you could see it is a high level Gant script that relies on the lower level targets of the 'system' scripts (the one prefixed with underscore). Let's bisect those targets one by one i.e. @checkVersion@, @configureProxy@, @packageApp@, @parseArgumnets@, @runApp@, and @watchContext@
+As you could see, it is a high level Gant script that relies on the lower level targets of the 'internal' scripts (the ones prefixed with underscore; they are not exposed as CLI) which are made available via Gant include mechanism: @includeTargets << grailsScript("_GrailsRun")@. This include makes all other Scripts included 'transitively', hence making finding dependent targets possible. Let's dissect those targets one by one i.e. @checkVersion@, @configureProxy@, @packageApp@, @parseArgumnets@, @runApp@, and @watchContext@
 
-TODO: Would need some help on this one, as scripts are highly dynamic and it's hard to track where the stuff (variables) comes from. Work in progress...
+[_scripts/_GrailsInit.groovy (checkVersion target)_]
+
+<pre>
+<code>
+	target(checkVersion: "Stops build if app expects different Grails version") {
+	    if (metadataFile.exists()) {
+	        if (appGrailsVersion != grailsVersion) {
+	            event("StatusFinal", ["Application expects grails version [$appGrailsVersion], but GRAILS_HOME is version " +
+	                    "[$grailsVersion] - use the correct Grails version or run 'grails upgrade' if this Grails " +
+	                    "version is newer than the version your application expects."])
+	            exit(1)
+	        }
+	    } else {
+	        // We know this is pre-0.5 application
+	        event("StatusFinal", ["Application is pre-Grails 0.5, please run: grails upgrade"])
+	        exit(1)
+	    }
+	}
+</code>
+</pre>
+
+As can be seen, it is a 'guard' target which makes sure that the bootstrap will proceed only in case of the installed Grails version matches Grails application's version (declared in application.properties). Also there is a check here for the 'exotic' case of application that's being tried to run is pre-0.5 version of Grails. In any of those cases, Grails sends an inforamtive message to the client and halts the execution of JVM i.e. @exit(1)@
+
+The 'magic' variables like @metadataFile@, @appGrailsVersion@, and @grailsVersion@ come from different places. The @metadataFile@ and @grailsVersion@ exist in the context of @groovy.lang.Binding@ which has been passed to Gant by @GrailsScriptRunner@ and @grailsVersion@ is a 'script global' variable which has been se and made available to all the scripts by @scripts/_GrailsSettings.groovy@. So, for future reference, if you're reading Grails scripts and wondering where a certain 'magic' variable comes from, look at @org.codehaus.groovy.grails.cli.GrailsScriptRunner.java ('initBinding' method)@ or @scripts/_GrailsSettings.groovy@
+
+[_scripts/_GrailsProxy.groovy (configureProxy target)_]
+
+<pre>
+<code>
+	target(configureProxy: "The implementation target") {
+	    def scriptFile = new File("${userHome}/.grails/scripts/ProxyConfig.groovy")
+	    if (scriptFile.exists()) {
+	        includeTargets << scriptFile.text
+	        if (proxyConfig.proxyHost) {
+	            // Let's configure proxy...
+	            def proxyHost = proxyConfig.proxyHost
+	            def proxyPort = proxyConfig.proxyPort ? proxyConfig.proxyPort : '80'
+	            def proxyUser = proxyConfig.proxyUser ? proxyConfig.proxyUser : ''
+	            def proxyPassword = proxyConfig.proxyPassword ? proxyConfig.proxyPassword : ''
+	            println "Configured HTTP proxy: ${proxyHost}:${proxyPort}${proxyConfig.proxyUser ? '(' + proxyUser + ')' : ''}"
+	            // ... for ant. We can remove this line with ant 1.7.0 as it uses system properties.
+	            ant.setproxy(proxyhost: proxyHost, proxyport: proxyPort, proxyuser: proxyUser, proxypassword: proxyPassword)
+	            // ... for all other code
+	            System.properties.putAll(["http.proxyHost": proxyHost, "http.proxyPort": proxyPort, "http.proxyUserName": proxyUser, "http.proxyPassword": proxyPassword])
+	        }
+	    }
+	}
+</code>
+</pre>
+
+This target is pretty straight forward. It just detects custom ProxyConfig script located in @${userHome}/.grails/scripts/ProxyConfig.groovy@ and if there is such script, it sets HTTP proxy related system variables.
+
+TODO: Work in progress...
+
+
+
+
+
+		
