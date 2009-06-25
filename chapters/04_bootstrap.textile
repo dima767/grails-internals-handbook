@@ -169,7 +169,7 @@ Here's what @runInline@ looks like:
 
 It uses @grails.web.container.EmbeddableServerFactory@ and @grails.web.container.EmbeddableServer@ abstraction for pluggable embeddable web servers.
 
-And finally here's how Jetty server factory gets loaded (in 'loadServerFactory'):
+Here's how Jetty server factory gets loaded (in 'loadServerFactory'):
 
 <pre>
 <code>
@@ -193,7 +193,42 @@ And finally here's how Jetty server factory gets loaded (in 'loadServerFactory')
 </code>
 </pre>			  
 
+And finally launching of the server:
 
+<pre>
+<code>
+	runServer = { Map args ->
+	    try {
+	        println "Running Grails application.."
+	        def message = "Server running. Browse to http://${args.host ?: 'localhost'}:${args.httpPort}$serverContextPath"
+
+	        EmbeddableServer server = args["server"]
+	        if(server.class.name.contains("Jetty")) {
+	             server.eventListener = this
+	        }
+
+	        profile("start server") {
+	            if(args.scheme == 'https') {
+	                server.startSecure args.host, args.httpPort, args.httpsPort
+
+	                // Update the message to reflect the fact we are running HTTPS as well.
+	                message += " or https://${args.host ?: 'localhost'}:${args.httpsPort}$serverContextPath"
+	            }
+	            else {
+	                server.start args.host, args.httpPort
+	            }
+	        }
+	        event("StatusFinal", [message])
+	    } catch (Throwable t) {
+	        GrailsUtil.deepSanitize(t)
+	        if (!(t.class instanceof java.net.SocketException) && !(t.cause?.class instanceof java.net.SocketException))
+	            t.printStackTrace()
+	        event("StatusFinal", ["Server failed to start: $t"])
+	        exit(1)
+	    }
+	}
+</code>
+</pre>		
 
 
 
