@@ -158,78 +158,24 @@ The main 'workhorse' of this class is @afterPropertiesSet@ method. It first chec
 </code>
 </pre>
 
-Let's look at @GrailsResourceLoader@
+Let's look at @org.codehaus.groovy.grails.commons.DefaultGrailsApplication@
 
-[org.codehaus.groovy.grails.compiler.support.GrailsResourceLoader]
+[org.codehaus.groovy.grails.commons.DefaultGrailsApplication (constructor)]
 
 <pre>
 <code>
-	public class GrailsResourceLoader implements GroovyResourceLoader {
-	    private Resource[] resources;
-	    private List loadedResources = new ArrayList();
-	    private Map classToResource = new HashMap();
-	    private Map pathToResource = new HashMap();
+	...
+	public DefaultGrailsApplication(GrailsResourceLoader resourceLoader) {
+        this.resourceLoader = resourceLoader;
 
-	    public GrailsResourceLoader(Resource[] resources) {
-	         this.resources = resources;
-	        createPathToURLMappings(resources);
-	    }
-
-	    private void createPathToURLMappings(Resource[] resources) {
-	        for (int i = 0; i < resources.length; i++) {
-	            String resourceURL;
-	            try {
-	                resourceURL = resources[i].getURL().toString();
-	            } catch (IOException e) {
-	                throw new GrailsConfigurationException("Unable to load Grails resource: " + e.getMessage(), e);
-	            }
-	            String pathWithinRoot = GrailsResourceUtils.getPathFromRoot(resourceURL);
-	            pathToResource.put(pathWithinRoot, resources[i]);
-	        }
-	    }
-
-	    public List getLoadedResources() {
-	        return loadedResources;
-	    }
-
-	    public void setResources(Resource[] resources) {
-	        this.resources = resources;
-	        createPathToURLMappings(resources);
-	    }
-
-	    public Resource[] getResources() {
-	        return resources;
-	    }
-
-	    public URL loadGroovySource(String className) throws MalformedURLException {
-	    	if(className == null) return null;
-	        String groovyFile = className.replace('.', '/') + ".groovy";
-
-	        try {
-
-	            Resource foundResource = (Resource)pathToResource.get(groovyFile);
-	            if (foundResource != null) {
-	                loadedResources.add(foundResource);
-	                classToResource.put(className, foundResource);
-	                return foundResource.getURL();
-	            } else {
-	                return null;
-	            }
-	        } catch (IOException e) {
-	            throw new GrailsConfigurationException("I/O exception loaded resource:" + e.getMessage(),e);
-	        }
-	    }
-
-	    /**
-	     * Returns the Grails resource for the given class or null if it is not a Grails resource
-	     *
-	     * @param theClass The class
-	     * @return The Resource or null
-	     */
-	    public Resource getResourceForClass(Class theClass) {
-	        return (Resource)classToResource.get(theClass.getName());
-	    }
-	}
+        try {
+        	this.applicationMeta = Metadata.getCurrent();
+            loadGrailsApplicationFromResources(resourceLoader.getResources());
+        } catch (IOException e) {
+            throw new GrailsConfigurationException("I/O exception loading Grails: " + e.getMessage(), e);
+        }
+    }
+	...
 </code>
 </pre>
 
