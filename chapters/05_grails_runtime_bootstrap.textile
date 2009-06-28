@@ -1,6 +1,238 @@
 h1. High level Bootstrap (launching Spring dependency injection container and initializing Grails runtime beans)
 
+Grails statically defines Spring beans representing the core runtime in the following Spring application context XML:
 
-TODO: Trace the steps of initializing Grails runtime beans i.e. GrailsApplicationFactoryBean, GrailsRuntimeConfigurator, and co.
+[applicationContext.xml]
 
-Work in progress...
+<pre>
+<code>
+	<?xml version="1.0" encoding="UTF-8"?>
+	<beans xmlns="http://www.springframework.org/schema/beans"
+	       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	       xsi:schemaLocation="
+	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+		<bean id="grailsApplication" class="org.codehaus.groovy.grails.commons.GrailsApplicationFactoryBean">
+			<description>Grails application factory bean</description>
+	        <property name="grailsDescriptor" value="/WEB-INF/grails.xml" />
+	        <property name="grailsResourceLoader" ref="grailsResourceLoader" />
+		</bean>
+
+		<bean id="pluginManager" class="org.codehaus.groovy.grails.plugins.GrailsPluginManagerFactoryBean">
+			<description>A bean that manages Grails plugins</description>
+	        <property name="grailsDescriptor" value="/WEB-INF/grails.xml" />
+	        <property name="application" ref="grailsApplication" />
+		</bean>
+
+	    <bean id="pluginMetaManager" class="org.codehaus.groovy.grails.plugins.DefaultPluginMetaManager">
+	        <property name="grailsApplication" ref="grailsApplication" />
+	        <property name="resourcePattern" value="/WEB-INF/plugins/*/plugin.xml" />
+	    </bean>
+
+	    <bean id="grailsConfigurator" class="org.codehaus.groovy.grails.commons.spring.GrailsRuntimeConfigurator">
+	        <constructor-arg>
+	            <ref bean="grailsApplication" />
+	        </constructor-arg>
+	        <property name="pluginManager" ref="pluginManager" />
+	    </bean>
+
+	    <bean id="grailsResourceLoader" class="org.codehaus.groovy.grails.commons.GrailsResourceLoaderFactoryBean">
+	        <property name="grailsResourceHolder" ref="grailsResourceHolder" />
+	    </bean>
+
+	    <bean id="grailsResourceHolder" scope="prototype" class="org.codehaus.groovy.grails.commons.spring.GrailsResourceHolder">
+	        <property name="resources">
+	              <value>classpath*:**/grails-app/**/*.groovy</value>
+	        </property>
+	    </bean>    
+
+	   <bean id="characterEncodingFilter"
+	      class="org.springframework.web.filter.CharacterEncodingFilter">
+	        <property name="encoding">
+	          <value>utf-8</value>
+	        </property>
+	   </bean>    	
+	</beans>
+</code>
+</pre>
+
+The bean responsible for creating an instance of @GrailsApplication@ is @org.codehaus.groovy.grails.commons.GrailsApplicationFactoryBean@:
+
+[org.codehaus.groovy.grails.commons.GrailsApplicationFactoryBean]
+
+<pre>
+<code>
+	public class GrailsApplicationFactoryBean implements FactoryBean, InitializingBean {
+
+		private static Log LOG = LogFactory.getLog(GrailsApplicationFactoryBean.class);
+		private GrailsInjectionOperation injectionOperation = null;
+		private GrailsApplication grailsApplication = null;
+	    private GrailsResourceLoader resourceLoader;
+	    private Resource descriptor;
+
+
+	    public GrailsInjectionOperation getInjectionOperation() {
+			return injectionOperation;
+		}
+
+		public void setInjectionOperation(GrailsInjectionOperation injectionOperation) {
+			this.injectionOperation = injectionOperation;
+		}
+
+		public GrailsApplicationFactoryBean() {
+			super();
+		}
+
+
+		public void afterPropertiesSet() throws Exception {
+	        if(descriptor != null && descriptor.exists()) {
+	            // Enforce UTF-8 on source code for reloads
+	            CompilerConfiguration config = CompilerConfiguration.DEFAULT;
+	            config.setSourceEncoding("UTF-8");
+	            GroovyClassLoader classLoader;
+	            final ClassLoader parentLoader = Thread.currentThread().getContextClassLoader();
+	            if(Environment.getCurrent().isReloadEnabled()) {
+	                CompilerConfiguration compilerConfig = CompilerConfiguration.DEFAULT;
+	                config.setSourceEncoding("UTF-8");
+
+	                classLoader = new GrailsClassLoader(parentLoader, compilerConfig, resourceLoader);
+	            }
+	            else {
+	                classLoader = new GroovyClassLoader(parentLoader, config);
+	            }
+	            List classes = new ArrayList();
+	            InputStream inputStream = null;
+	            try {
+	                inputStream = descriptor.getInputStream();
+
+	                // Get all the resource nodes in the descriptor.
+	                // Xpath: /grails/resources/resource, where root is /grails
+	                GPathResult root = new XmlSlurper().parse(inputStream);
+	                GPathResult resources = (GPathResult) root.getProperty("resources");
+	                GPathResult grailsClasses = (GPathResult) resources.getProperty("resource");
+
+	                // Each resource node should contain a full class name,
+	                // so we attempt to load them as classes.
+	                for (int i = 0; i < grailsClasses.size(); i++) {
+	                    GPathResult node = (GPathResult) grailsClasses.getAt(i);
+	                    try {
+	                        classes.add(classLoader.loadClass(node.text()));
+	                    } catch (ClassNotFoundException e) {
+	                        LOG.warn("Class with name ["+node.text()+"] was not found, and hence not loaded. Possible empty class or script definition?");
+	                    }
+	                }
+	            } finally {
+	                if(inputStream!=null)
+	                    inputStream.close();
+	            }
+	            Class[] loadedClasses = (Class[])classes.toArray(new Class[classes.size()]);
+	            this.grailsApplication = new DefaultGrailsApplication(loadedClasses, classLoader);
+	        }
+	        else {
+	            Assert.notNull(resourceLoader, "Property [resourceLoader] must be set!");
+
+	            this.grailsApplication = new DefaultGrailsApplication(this.resourceLoader);
+	        }
+
+	        ApplicationHolder.setApplication(this.grailsApplication);
+	    }
+
+		public Object getObject() throws Exception {
+			return this.grailsApplication;
+		}
+		...
+</code>
+</pre>
+
+The main 'workhorse' of this class is @afterPropertiesSet@ method. It first checks if the application is being loaded from the deployed war i.e. the static Grails descriptor @grails.xml@, describing all the resources representing a Grails application is available. If that's the case it parses the descriptor, compiles and loads all the resources (domain classes, controllers, services, etc.) statically and instantiates the @DefaultGrailsApplication@ with @GrailsClassLoader@ and an array of loaded classes: @this.grailsApplication = new DefaultGrailsApplication(loadedClasses, classLoader);@. Otherwise, i.e. the application is being started in the dev mode in the embedded servlet container, it instantiates @DefaultGrailsApplication@ with an instance of @org.codehaus.groovy.grails.compiler.support.GrailsResourceLoader@ that's been injected into this instance:
+
+<pre>
+<code>
+	...
+	else {
+        Assert.notNull(resourceLoader, "Property [resourceLoader] must be set!");
+
+        this.grailsApplication = new DefaultGrailsApplication(this.resourceLoader);
+    }
+	...
+</code>
+</pre>
+
+Let's look at @GrailsResourceLoader@
+
+[org.codehaus.groovy.grails.compiler.support.GrailsResourceLoader]
+
+<pre>
+<code>
+	public class GrailsResourceLoader implements GroovyResourceLoader {
+	    private Resource[] resources;
+	    private List loadedResources = new ArrayList();
+	    private Map classToResource = new HashMap();
+	    private Map pathToResource = new HashMap();
+
+	    public GrailsResourceLoader(Resource[] resources) {
+	         this.resources = resources;
+	        createPathToURLMappings(resources);
+	    }
+
+	    private void createPathToURLMappings(Resource[] resources) {
+	        for (int i = 0; i < resources.length; i++) {
+	            String resourceURL;
+	            try {
+	                resourceURL = resources[i].getURL().toString();
+	            } catch (IOException e) {
+	                throw new GrailsConfigurationException("Unable to load Grails resource: " + e.getMessage(), e);
+	            }
+	            String pathWithinRoot = GrailsResourceUtils.getPathFromRoot(resourceURL);
+	            pathToResource.put(pathWithinRoot, resources[i]);
+	        }
+	    }
+
+	    public List getLoadedResources() {
+	        return loadedResources;
+	    }
+
+	    public void setResources(Resource[] resources) {
+	        this.resources = resources;
+	        createPathToURLMappings(resources);
+	    }
+
+	    public Resource[] getResources() {
+	        return resources;
+	    }
+
+	    public URL loadGroovySource(String className) throws MalformedURLException {
+	    	if(className == null) return null;
+	        String groovyFile = className.replace('.', '/') + ".groovy";
+
+	        try {
+
+	            Resource foundResource = (Resource)pathToResource.get(groovyFile);
+	            if (foundResource != null) {
+	                loadedResources.add(foundResource);
+	                classToResource.put(className, foundResource);
+	                return foundResource.getURL();
+	            } else {
+	                return null;
+	            }
+	        } catch (IOException e) {
+	            throw new GrailsConfigurationException("I/O exception loaded resource:" + e.getMessage(),e);
+	        }
+	    }
+
+	    /**
+	     * Returns the Grails resource for the given class or null if it is not a Grails resource
+	     *
+	     * @param theClass The class
+	     * @return The Resource or null
+	     */
+	    public Resource getResourceForClass(Class theClass) {
+	        return (Resource)classToResource.get(theClass.getName());
+	    }
+	}
+</code>
+</pre>
+
+TODO: work in progress...	
+
+	
