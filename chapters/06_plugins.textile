@@ -1,0 +1,4 @@
+h1. Plugin system
+
+TODO: Anyone wants to take a stab at it...?
+

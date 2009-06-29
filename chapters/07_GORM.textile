@@ -1,0 +1,4 @@
+h1. Grails Object Relational Mapper (GORM)
+
+TODO: Anyone wants to take a stab at it...?
+
